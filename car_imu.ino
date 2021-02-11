@@ -6,6 +6,10 @@
  * 
  */
 
+/*
+ * Libraries needed for 
+ */
+
 // Setup for IMU
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
@@ -52,7 +56,7 @@ float v;
 unsigned long millisOld, timerStart, calTimerStart;
 float frontDuration, frontObsDistance;
 char cmd;
-unsigned long calTime = 120000; // miliseconds for calibration. 2 minutes should be enough to get a good calibration.
+unsigned long calTime = 90000; // miliseconds for calibration. 2 minutes should be enough to get a good calibration.
 bool calibrated = 0;
 
 

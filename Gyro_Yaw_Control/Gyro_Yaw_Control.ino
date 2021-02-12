@@ -152,20 +152,15 @@ void forward(float d, float v){
     yawError = yawTarget - yawActual;
     kCorrection = yawError * kp; 
 
-    if(yawError > 0){
-      //slow down left wheels.
-      //ENA controls the left side.
-      left = wv - kp*yawError;
-      setSpeed(left, right);
+    //drifting right
+    //slow down left wheels.
+    //drifting left, speed up left wheel.
+    //ENA controls the left side.
+    left = wv - kp*yawError;
+    setSpeed(left, right);
       
-    }
-    if(yawError < 0){
-      //Speed up left wheels.
-      left = wv + kp*yawError;
-      setSpeed(left, right);
-    }
-
-
+    
+    
     Serial.print(kCorrection);
     Serial.print(", ");
     Serial.print(yawActual);
@@ -275,13 +270,4 @@ digitalWrite(IN3,LOW);
 digitalWrite(IN4,HIGH);
 delay(5000);
 stopCar();
-}
-void setup() {
-  // put your setup code here, to run once:
-
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
 }

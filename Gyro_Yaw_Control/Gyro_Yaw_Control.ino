@@ -1,7 +1,9 @@
 /*
- * Version 0.1
+ * Version 0.2
  * Attempt to control the yaw with the gyro. Quaternions are a problem because they use the magnetometers.
  * When the motors turn on the magnetometers report bad values and the yaw angle becomes unusable
+ * Pretty good results. a bit of overshoot and undershoot. tweaking kp and ki should result in straighter driving.
+ *
  * 
  */
 
@@ -84,8 +86,8 @@ void loop() {
     digitalWrite(ledPin, LOW);
     delay(1500);
   }
-  //calibrate();
-  v = 0.8;
+  calibrate();
+  v = 1.1;
   wv = (v + 0.07213) / 0.00836129;
   left = wv;
   right = wv;
@@ -98,12 +100,29 @@ void loop() {
 
   delay(5000);
   forward(5, v);
+  delay(300);
+  turnRight(180, wv);
+  delay(300);
+  forward(5,v);
+  
 } // ENDING BRACE for loop()
 
 
 
 // Begin Function Declarations
 void setSpeed(int leftVal,int rightVal){
+  if(leftVal > 255){
+    leftVal = 255;
+  }
+    if(leftVal < 100){
+    leftVal = 100;
+  }
+  if(rightVal > 255){
+    rightVal = 255;
+  }
+    if(rightVal < 100){
+    rightVal = 100;
+  }
   analogWrite(ENA,leftVal);
   analogWrite(ENB,rightVal);
 }
@@ -134,8 +153,10 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 0.2;
+  float kp = 0.3, ki = 0.1;
   float kCorrection;
+  float yawErrorSum = 0;
+
     
   t=d/v*1000; // time to run motors in miliseconds to achieve desired distance.
   timerStart = millis();
@@ -150,18 +171,19 @@ void forward(float d, float v){
     millisOld = millis();
     yawActual = yawActual + gyr.z() * dt;
     yawError = yawTarget - yawActual;
-    kCorrection = yawError * kp; 
+    yawErrorSum += yawError;
+    
 
     //drifting right
     //slow down left wheels.
     //drifting left, speed up left wheel.
     //ENA controls the left side.
-    left = wv - kp*yawError;
+    left = wv - kp*yawError - ki*yawErrorSum;
     setSpeed(left, right);
       
     
     
-    Serial.print(kCorrection);
+    Serial.print(yawErrorSum);
     Serial.print(", ");
     Serial.print(yawActual);
     Serial.print(", ");
@@ -180,6 +202,7 @@ void forward(float d, float v){
 
 
 void backward(float d, float v){
+  //Add forward control here but may need to change signs to get things to work in reverse.
 float t;
 digitalWrite(IN1,LOW);
 digitalWrite(IN2,HIGH);
@@ -192,16 +215,28 @@ stopCar();
 
 
 void turnRight(float deg, int wv){
+  float angleTurned = 0;
   float t;
-//Set speed to 125 for turning.
-setSpeed(125, 125);
+  //Set speed to 110 for turning. Then use wv to set back to whatever speed we were at prior to turning.
+  setSpeed(110, 110);
 
-digitalWrite(IN1,HIGH);
-digitalWrite(IN2,LOW);
-digitalWrite(IN3,HIGH);
-digitalWrite(IN4,LOW);
-t= (deg + 0.9) / 100.119 * 1000;
-delay(t);
+  digitalWrite(IN1,HIGH);
+  digitalWrite(IN2,LOW);
+  digitalWrite(IN3,HIGH);
+  digitalWrite(IN4,LOW);
+  millisOld = millis();
+  while(angleTurned < deg){
+    imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    dt = (millis() - millisOld) / 1000.;
+    millisOld = millis();
+    angleTurned += -gyr.z()*dt; //adding negative values because turning right will give us negative omega for gyr.z()
+    
+    
+}
+
+// t= (deg + 0.9) / 100.119 * 1000; calculation to get the desired angle of turn.
+// Hoping to take this out and just use the gyro reading to determing how far we have turned.
+//delay(t);
 stopCar();
 
 //reset speed

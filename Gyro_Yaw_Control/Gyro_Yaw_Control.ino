@@ -86,7 +86,7 @@ void loop() {
     digitalWrite(ledPin, LOW);
     delay(1500);
   }
-  calibrate();
+  //calibrate();
   v = 1.1;
   wv = (v + 0.07213) / 0.00836129;
   left = wv;
@@ -101,9 +101,11 @@ void loop() {
   delay(5000);
   forward(5, v);
   delay(300);
-  turnRight(180, wv);
+  turnRight(170, wv);
   delay(300);
   forward(5,v);
+  delay(300);
+  turnRight(170, wv);
   
 } // ENDING BRACE for loop()
 
@@ -153,7 +155,7 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 0.3, ki = 0.1;
+  float kp = 0.3, ki = 0.05;
   float kCorrection;
   float yawErrorSum = 0;
 
@@ -218,7 +220,7 @@ void turnRight(float deg, int wv){
   float angleTurned = 0;
   float t;
   //Set speed to 110 for turning. Then use wv to set back to whatever speed we were at prior to turning.
-  setSpeed(110, 110);
+  setSpeed(100, 100);
 
   digitalWrite(IN1,HIGH);
   digitalWrite(IN2,LOW);

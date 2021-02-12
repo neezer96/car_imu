@@ -77,13 +77,19 @@ millisOld = millis();
 }
 
 void loop() {
-  calibrate();
+  uint8_t system, gyro, accel, mg = 0;
+  myIMU.getCalibration(&system, &gyro, &accel, &mg);
+  if(accel!=3 | gyro!=3 | mg!=3 | system!=3){
+    calibrated=0;
+    digitalWrite(ledPin, LOW);
+    delay(1500);
+  }
+  //calibrate();
   v = 0.8;
   wv = (v + 0.07213) / 0.00836129;
   left = wv;
   right = wv;
   setSpeed(left, right);
-  uint8_t system, gyro, accel, mg = 0;
   imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
 
   dt = (millis() - millisOld) / 1000.;
@@ -128,6 +134,9 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
+  float kp = 0.2;
+  float kCorrection;
+    
   t=d/v*1000; // time to run motors in miliseconds to achieve desired distance.
   timerStart = millis();
   digitalWrite(IN1,HIGH);
@@ -140,15 +149,35 @@ void forward(float d, float v){
     dt = (millis() - millisOld) / 1000.;
     millisOld = millis();
     yawActual = yawActual + gyr.z() * dt;
-    yawError = yawTarget - yawActual; 
-    
+    yawError = yawTarget - yawActual;
+    kCorrection = yawError * kp; 
+
+    if(yawError > 0){
+      //slow down left wheels.
+      //ENA controls the left side.
+      left = wv - kp*yawError;
+      setSpeed(left, right);
+      
+    }
+    if(yawError < 0){
+      //Speed up left wheels.
+      left = wv + kp*yawError;
+      setSpeed(left, right);
+    }
+
+
+    Serial.print(kCorrection);
+    Serial.print(", ");
     Serial.print(yawActual);
     Serial.print(", ");
     Serial.print(yawTarget);
     Serial.print(", ");
-    Serial.println(yawError);    
-
-  
+    Serial.print(yawError);    
+    Serial.print(", ");
+    Serial.print(left);
+    Serial.print(", ");
+    Serial.println(right);
+    
 }
 
   stopCar();

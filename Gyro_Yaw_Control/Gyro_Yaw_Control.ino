@@ -99,16 +99,10 @@ void loop() {
   yawActual = yawActual + wz * dt;
   
 
-  delay(500);
-  forward(5, v);
-  delay(300);
-//  turnRight(170, wv);
-//  delay(300);
-//  forward(5,v);
-//  delay(300);
-//  turnRight(170, wv);
+  delay(3000);
+  turnRight(180, wv);
   
-} // ENDING BRACE for loop()
+  } // ENDING BRACE for loop()
 
 
 
@@ -128,6 +122,9 @@ void setSpeed(int leftVal,int rightVal){
   }
   analogWrite(ENA,leftVal);
   analogWrite(ENB,rightVal);
+  Serial.print(left);
+  Serial.print(",");
+  Serial.println(right);
 }
 void calibrate(){
   Serial.print("calibrating");
@@ -185,20 +182,13 @@ void forward(float d, float v){
     //ENA controls the left side.
     right = wv + kp*yawError + ki*yawErrorSum - kd * wz;
     setSpeed(left, right);
-      
+    delay(BNO055_SAMPLERATE_DELAY_MS);
     
     
-    Serial.print(wz);
-    Serial.print(", ");
     Serial.print(yawActual);
     Serial.print(", ");
-    Serial.print(yawTarget);
-    Serial.print(", ");
-    Serial.print(yawError);    
-    Serial.print(", ");
-    Serial.print(left);
-    Serial.print(", ");
-    Serial.println(right);
+    Serial.println(yawError);    
+    
     
 }
 
@@ -234,8 +224,10 @@ void turnRight(float deg, int wv){
     imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     dt = (millis() - millisOld) / 1000.;
     millisOld = millis();
-    angleTurned += -gyr.z()*dt; //adding negative values because turning right will give us negative omega for gyr.z()
-    
+    wz = gyr.z();
+    angleTurned += -wz * dt; //adding negative values because turning right will give us negative omega for gyr.z()
+    delay(BNO055_SAMPLERATE_DELAY_MS);
+    Serial.println(angleTurned);
     
 }
 
@@ -270,44 +262,4 @@ digitalWrite(IN1,LOW);
 digitalWrite(IN2,LOW);
 digitalWrite(IN3,LOW);
 digitalWrite(IN4,LOW);
-}
-
-void calF(){
-digitalWrite(IN1,HIGH);
-digitalWrite(IN2,LOW);
-digitalWrite(IN3,LOW);
-digitalWrite(IN4,HIGH);
-delay(5000);
-stopCar();
-}
-void calB(){
-digitalWrite(IN1,LOW);
-digitalWrite(IN2,HIGH);
-digitalWrite(IN3,HIGH);
-digitalWrite(IN4,LOW);
-delay(5000);
-stopCar();
-}
-void calR(int wv){
-stopCar();
-//set turning speed. Use low power to avoid skidding on power up and down.
-setSpeed(150, 150);
-
-digitalWrite(IN1,HIGH);
-digitalWrite(IN2,LOW);
-digitalWrite(IN3,HIGH);
-digitalWrite(IN4,LOW);
-delay(2000);
-stopCar();
-
-//reset motor speed to wv after turn.
-setSpeed(wv, wv);
-}
-void calL(){
-digitalWrite(IN1,LOW);
-digitalWrite(IN2,HIGH);
-digitalWrite(IN3,LOW);
-digitalWrite(IN4,HIGH);
-delay(5000);
-stopCar();
 }

@@ -16,6 +16,7 @@
 #include <utility/imumaths.h>
 #include <math.h>
 
+
 //ultrasonic declarations
 #define frontTriggerPin 2
 #define frontEchoPin 4
@@ -155,7 +156,7 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 25, ki = 0, kd=0;
+  float kp = 40, ki = 0.001, kd=0;
   float kCorrection;
   float yawErrorSum = 0;
 

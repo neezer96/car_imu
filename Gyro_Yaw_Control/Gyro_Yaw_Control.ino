@@ -155,7 +155,7 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 0.4, ki = 0.05, kd=0.001;
+  float kp = 25, ki = 0, kd=0;
   float kCorrection;
   float yawErrorSum = 0;
 

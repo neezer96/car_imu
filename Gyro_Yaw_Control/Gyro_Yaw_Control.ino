@@ -4,7 +4,8 @@
  * When the motors turn on the magnetometers report bad values and the yaw angle becomes unusable
  * Pretty good results. a bit of overshoot and undershoot. tweaking kp and ki should result in straighter driving.
  *
- * 
+ * Turning doesn't work properly for 180 degree turns. Had to fudge the turning to get 180s. This will need some work in the future.
+ * Maybe a check of the magnetic azimuth with the motors turned off after a turn is done. then a tweak to get the proper rotation.
  */
 
 
@@ -36,17 +37,15 @@ Adafruit_BNO055 myIMU = Adafruit_BNO055();
 
 float rollActual;
 float pitchActual;
-float yawActual = 0.; //Yaw angle gets larger when car rotates counterclockwise from above.
+float yawActual = 0; //Yaw angle gets larger when car rotates counterclockwise from above.
 float yawTarget;
+float wz; // z axis gyro reading
 
 float d=1;
 int degRot, left, right, wv, rv;
-float v;
+float v, dt;
 unsigned long millisOld, timerStart, calTimerStart;
-float dt;
 float frontDuration, frontObsDistance;
-char cmd;
-unsigned long calTime = 90000; // miliseconds for calibration. 2 minutes should be enough to get a good calibration.
 bool calibrated = 0;
 
 
@@ -93,19 +92,20 @@ void loop() {
   right = wv;
   setSpeed(left, right);
   imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-
   dt = (millis() - millisOld) / 1000.;
   millisOld = millis();
-  yawActual = yawActual + gyr.z() * dt;
+  wz = gyr.z();
+  yawActual = yawActual + wz * dt;
+  
 
-  delay(5000);
+  delay(500);
   forward(5, v);
   delay(300);
-  turnRight(170, wv);
-  delay(300);
-  forward(5,v);
-  delay(300);
-  turnRight(170, wv);
+//  turnRight(170, wv);
+//  delay(300);
+//  forward(5,v);
+//  delay(300);
+//  turnRight(170, wv);
   
 } // ENDING BRACE for loop()
 
@@ -155,7 +155,7 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 0.3, ki = 0.05;
+  float kp = 0.4, ki = 0.05, kd=0.001;
   float kCorrection;
   float yawErrorSum = 0;
 
@@ -171,21 +171,23 @@ void forward(float d, float v){
     imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     dt = (millis() - millisOld) / 1000.;
     millisOld = millis();
-    yawActual = yawActual + gyr.z() * dt;
+    wz = gyr.z();
+    yawActual = yawActual + wz * dt;
     yawError = yawTarget - yawActual;
     yawErrorSum += yawError;
     
 
-    //drifting right
-    //slow down left wheels.
-    //drifting left, speed up left wheel.
+    //drifting right, speed up right wheels.
+    //drifting left, slow down right wheel.
+    //wz is negative when rotating clockwise. 
+    //if wz is negative we need a positive derivative term...minus sign for kd*wz.
     //ENA controls the left side.
-    left = wv - kp*yawError - ki*yawErrorSum;
+    right = wv + kp*yawError + ki*yawErrorSum - kd * wz;
     setSpeed(left, right);
       
     
     
-    Serial.print(yawErrorSum);
+    Serial.print(wz);
     Serial.print(", ");
     Serial.print(yawActual);
     Serial.print(", ");

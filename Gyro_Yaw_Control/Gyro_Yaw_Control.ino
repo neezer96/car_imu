@@ -1,5 +1,9 @@
 /*
- * Version 0.2
+ * Version 0.3
+ * 
+ * 0.3 Changes
+ * Change from using millis to micros. Lower the samplerate delay from 100 milliseconds to 10 milliseconds. This will give us 100hZ sample rate instead of 10hZ sample.
+ * 
  * Attempt to control the yaw with the gyro. Quaternions are a problem because they use the magnetometers.
  * When the motors turn on the magnetometers report bad values and the yaw angle becomes unusable
  * Pretty good results. a bit of overshoot and undershoot. tweaking kp and ki should result in straighter driving.
@@ -33,7 +37,7 @@
 #define ledPin 13 //used to check calibration of IMU. LEd will light when system and accel calibration is good.
 
 // Initialize IMU
-#define BNO055_SAMPLERATE_DELAY_MS (100)
+#define BNO055_SAMPLERATE_DELAY_MS (10)
 Adafruit_BNO055 myIMU = Adafruit_BNO055();
 
 float rollActual;
@@ -45,7 +49,7 @@ float wz; // z axis gyro reading
 float d=1;
 int degRot, left, right, wv, rv;
 float v, dt;
-unsigned long millisOld, timerStart, calTimerStart;
+unsigned long microsOld, timerStart, calTimerStart;
 float frontDuration, frontObsDistance;
 bool calibrated = 0;
 
@@ -75,7 +79,7 @@ digitalWrite(ENB,HIGH);
 pinMode(ledPin, OUTPUT);
 digitalWrite(ledPin, LOW);
 
-millisOld = millis();
+microsOld = micros();
 }
 
 void loop() {
@@ -93,13 +97,13 @@ void loop() {
   right = wv;
   setSpeed(left, right);
   imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-  dt = (millis() - millisOld) / 1000.;
-  millisOld = millis();
+  dt = (micros() - microsOld) / 1000000.;
+  microsOld = micros();
   wz = gyr.z();
   yawActual = yawActual + wz * dt;
   
-
-  delay(3000);
+  forward(5, v);
+  delay(300);
   turnRight(180, wv);
   
   } // ENDING BRACE for loop()
@@ -158,17 +162,17 @@ void forward(float d, float v){
   float yawErrorSum = 0;
 
     
-  t=d/v*1000; // time to run motors in miliseconds to achieve desired distance.
-  timerStart = millis();
+  t=d/v*1000000; // time to run motors in microseconds to achieve desired distance.
+  timerStart = micros();
   digitalWrite(IN1,HIGH);
   digitalWrite(IN2,LOW);
   digitalWrite(IN3,LOW);
   digitalWrite(IN4,HIGH);
-  millisOld = millis();
-  while((millis() - timerStart) < t){
+  microsOld = micros();
+  while((micros() - timerStart) < t){
     imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    dt = (millis() - millisOld) / 1000.;
-    millisOld = millis();
+    dt = (micros() - microsOld) / 1000000.;
+    microsOld = micros();
     wz = gyr.z();
     yawActual = yawActual + wz * dt;
     yawError = yawTarget - yawActual;
@@ -211,7 +215,7 @@ stopCar();
 
 void turnRight(float deg, int wv){
   float angleTurned = 0;
-  float t;
+  float t, predictedTurn  = 0;
   //Set speed to 110 for turning. Then use wv to set back to whatever speed we were at prior to turning.
   setSpeed(100, 100);
 
@@ -219,13 +223,14 @@ void turnRight(float deg, int wv){
   digitalWrite(IN2,LOW);
   digitalWrite(IN3,HIGH);
   digitalWrite(IN4,LOW);
-  millisOld = millis();
+  microsOld = micros();
   while(angleTurned < deg){
     imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    dt = (millis() - millisOld) / 1000.;
-    millisOld = millis();
+    dt = (micros() - microsOld) / 1000000.;
+    microsOld = micros();
     wz = gyr.z();
     angleTurned += -wz * dt; //adding negative values because turning right will give us negative omega for gyr.z()
+    predictedTurn = angleTurned - wz*(dt * 1.25);
     delay(BNO055_SAMPLERATE_DELAY_MS);
     Serial.println(angleTurned);
     

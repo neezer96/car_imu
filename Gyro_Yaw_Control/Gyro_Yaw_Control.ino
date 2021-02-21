@@ -157,7 +157,7 @@ void calibrate(){
 void forward(float d, float v){
   yawTarget = yawActual;
   float t, yawError;
-  float kp = 40, ki = 0.001, kd=0;
+  float kp = 20, ki = 0.001, kd=0;
   float kCorrection;
   float yawErrorSum = 0;
 
@@ -183,8 +183,10 @@ void forward(float d, float v){
     //drifting left, slow down right wheel.
     //wz is negative when rotating clockwise. 
     //if wz is negative we need a positive derivative term...minus sign for kd*wz.
-    //ENA controls the left side.
-    right = wv + kp*yawError + ki*yawErrorSum - kd * wz;
+    
+    right = wv + (kp*yawError + ki*yawErrorSum - kd * wz);
+    left = wv - (kp*yawError + ki*yawErrorSum - kd*wz);
+     
     setSpeed(left, right);
     delay(BNO055_SAMPLERATE_DELAY_MS);
     
@@ -224,13 +226,13 @@ void turnRight(float deg, int wv){
   digitalWrite(IN3,HIGH);
   digitalWrite(IN4,LOW);
   microsOld = micros();
-  while(angleTurned < deg){
+  while(predictedTurn < deg){
     imu::Vector<3> gyr =myIMU.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     dt = (micros() - microsOld) / 1000000.;
     microsOld = micros();
     wz = gyr.z();
     angleTurned += -wz * dt; //adding negative values because turning right will give us negative omega for gyr.z()
-    predictedTurn = angleTurned - wz*(dt * 1.25);
+    predictedTurn = angleTurned + 15; //- wz*(dt * 3.0);
     delay(BNO055_SAMPLERATE_DELAY_MS);
     Serial.println(angleTurned);
     

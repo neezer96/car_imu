@@ -90,7 +90,9 @@ void loop() {
     digitalWrite(ledPin, LOW);
     delay(1500);
   }
-  //calibrate();
+  if(calibrated == 0){
+    calibrate();
+  }
   v = 1.1;
   wv = (v + 0.07213) / 0.00836129;
   left = wv;
